@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Syllable Strike!</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-image: url('https://images.unsplash.com/photo-1503676260728-1c00da094a0b');
+      background-size: cover;
+      background-position: center;
+      margin: 0;
+      padding: 0;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+    }
+    #game-screen, #result-screen {
+      display: none;
+      text-align: center;
+    }
+    .word {
+      font-size: 2em;
+      margin: 20px;
+    }
+    button {
+      font-size: 1.2em;
+      padding: 10px 20px;
+      margin: 10px;
+      border-radius: 10px;
+      border: none;
+      background-color: #4e8cff;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #3572d1;
+    }
+    .correct {
+      background-color: #4CAF50;
+    }
+    .incorrect {
+      background-color: #f44336;
+    }
+    #timer {
+      font-size: 1.5em;
+      margin: 10px;
+    }
+    #lives {
+      margin: 10px;
+    }
+    .heart {
+      width: 30px;
+      vertical-align: middle;
+    }
+    #start-screen h1 {
+      font-size: 3em;
+    }
+    #start-screen p {
+      font-size: 1.2em;
+    }
+  </style>
+</head>
+<body>
+
+<div id="start-screen">
+  <h1>🎯 Syllable Strike!</h1>
+  <p>Click the stressed syllable in each word. You have 5 lives!</p>
+  <button id="start-btn">Start Game</button>
+</div>
+
+<div id="game-screen">
+  <div id="timer">Time: <span id="time">10</span></div>
+  <div id="lives"></div>
+  <div class="word" id="word"></div>
+  <div id="options"></div>
+</div>
+
+<div id="result-screen">
+  <h2>Game Over!</h2>
+  <p>Your score: <span id="score-display"></span></p>
+  <button id="restart-btn">Play Again</button>
+</div>
+
+<audio id="correct-sound" src="c:\Users\home\Downloads\the-correct-answer-33-183620.mp3"></audio>
+<audio id="wrong-sound" src="c:\Users\home\Downloads\buzzer-or-wrong-answer-20582.mp3"></audio>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const questions = [
+    { word: "banana", options: ["ba", "na", "na"], correct: 1 },
+    { word: "elephant", options: ["e", "le", "phant"], correct: 0 },
+    { word: "computer", options: ["com", "pu", "ter"], correct: 1 },
+    { word: "photograph", options: ["pho", "to", "graph"], correct: 0 },
+    { word: "development", options: ["de", "vel", "op", "ment"], correct: 1 },
+    { word: "tomato", options: ["to", "ma", "to"], correct: 1 },
+    { word: "present", options: ["pre", "sent"], correct: 1 },
+    { word: "chocolate", options: ["cho", "co", "late"], correct: 0 },
+    { word: "museum", options: ["mu", "se", "um"], correct: 1 },
+    { word: "America", options: ["A", "me", "ri", "ca"], correct: 1 }
+  ];
+
+  let currentQuestion = 0;
+  let score = 0;
+  let timer;
+  let timeLeft = 10;
+  let lives = 5;
+
+  const startBtn = document.getElementById('start-btn');
+  const restartBtn = document.getElementById('restart-btn');
+
+  startBtn.addEventListener('click', startGame);
+  restartBtn.addEventListener('click', restartGame);
+
+  function startGame() {
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'block';
+    currentQuestion = 0;
+    score = 0;
+    lives = 5;
+    updateLives();
+    showQuestion();
+  }
+
+  function updateLives() {
+    const livesDiv = document.getElementById('lives');
+    livesDiv.innerHTML = '';
+    for (let i = 0; i < lives; i++) {
+      const img = document.createElement('img');
+      img.src = 'https://c0.klipartz.com/pngpicture/914/761/gratis-png-minecraft-pixel-s-de-dinosaurios-thumbnail.png';
+      img.className = 'heart';
+      livesDiv.appendChild(img);
+    }
+  }
+
+  function showQuestion() {
+    timeLeft = 10;
+    document.getElementById('time').textContent = timeLeft;
+    document.getElementById('word').textContent = questions[currentQuestion].word;
+
+    const optionsDiv = document.getElementById('options');
+    optionsDiv.innerHTML = '';
+
+    questions[currentQuestion].options.forEach((option, index) => {
+      const btn = document.createElement('button');
+      btn.textContent = option;
+      btn.onclick = () => checkAnswer(index, btn);
+      optionsDiv.appendChild(btn);
+    });
+
+    clearInterval(timer);
+    timer = setInterval(() => {
+      timeLeft--;
+      document.getElementById('time').textContent = timeLeft;
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        loseLife();
+        setTimeout(nextQuestion, 500);
+      }
+    }, 1000);
+  }
+
+  function checkAnswer(index, button) {
+    clearInterval(timer);
+    const correct = questions[currentQuestion].correct;
+    if (index === correct) {
+      document.getElementById('correct-sound').play();
+      button.classList.add('correct');
+      score++;
+    } else {
+      document.getElementById('wrong-sound').play();
+      button.classList.add('incorrect');
+      loseLife();
+      const buttons = document.querySelectorAll('#options button');
+      buttons[correct].classList.add('correct');
+    }
+    setTimeout(nextQuestion, 1000);
+  }
+
+  function loseLife() {
+    lives--;
+    updateLives();
+    if (lives <= 0) {
+      endGame();
+    }
+  }
+
+  function nextQuestion() {
+    currentQuestion++;
+    if (currentQuestion < questions.length && lives > 0) {
+      showQuestion();
+    } else {
+      endGame();
+    }
+  }
+
+  function endGame() {
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'block';
+    document.getElementById('score-display').textContent = `${score} / ${questions.length}`;
+  }
+
+  function restartGame() {
+    document.getElementById('result-screen').style.display = 'none';
+    document.getElementById('start-screen').style.display = 'block';
+  }
+});
+</script>
+
+</body>
+</html>
